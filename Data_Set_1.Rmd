@@ -19,6 +19,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(openxlsx)
 library(dplyr)
+library(zoo)
 ```
 
 
@@ -82,5 +83,22 @@ data_new %>%
 ```
 
 
-Now at this point, here is the list of items that should be concluded
+<H1> Let's Define the quarters </H1>
+
+I really didn't like the approach of aggregating by season as it fails to take into account changes in the COVID situation due to time of year, 
+
+
+Spring-March 1st to May 31
+Summer-June 1st to August 31st
+Fall-Sept 1 to November 30th
+Winter-Dec 1 to Feb 28/29
+
+```{r}
+data_new$season = as.yearqtr(data_new$submission_date, format = "%m/%d/%Y")
+data_new2 <- subset(data_new, select = -c(submission_date, state) )
+data_new3 <- data_new2 %>%
+  group_by(season) %>%
+  summarise_all(sum)
+data_new3
+```
 
