@@ -1,5 +1,5 @@
 ---
-title: Data 607 Project
+title: Data 607 Project-Covid Data
 author: Alex Moyse
 output: 
   html_document:
@@ -52,6 +52,7 @@ deltaDate$date_diff <- as.Date(as.character(deltaDate$submission_date), format="
                   as.Date(as.character(deltaDate$created_at), format="%m/%d/%Y %H:%M:%S")
 deltaDate <- deltaDate[order(deltaDate$date_diff),]
 deltaDate
+write.csv(deltaDate,"Covid_data_reporting_delta.csv", row.names = FALSE)
 ```
 
 <H1> Let's Address unique states </H1>
@@ -94,11 +95,16 @@ Fall-Sept 1 to November 30th
 Winter-Dec 1 to Feb 28/29
 
 ```{r}
-data_new$season = as.yearqtr(data_new$submission_date, format = "%m/%d/%Y")
+data_new$yearquarter = as.yearqtr(data_new$submission_date, format = "%m/%d/%Y")
 data_new2 <- subset(data_new, select = -c(submission_date, state) )
 data_new3 <- data_new2 %>%
-  group_by(season) %>%
+  group_by(yearquarter) %>%
   summarise_all(sum)
 data_new3
+write.csv(data_new3,"Covid_data_year_quarter.csv", row.names = FALSE)
 ```
+
+<H1> Conclusion </H1>
+
+So we have our data saved and easily accessible. It is ready to be read into anything else, or picked up in R to analyze!
 

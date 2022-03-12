@@ -1,0 +1,101 @@
+---
+title: Data 607 Project-Git Data
+author: Alex Moyse
+output: 
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+<H1>The library load in </H1>
+
+```{r}
+library(tidyverse)
+library(openxlsx)
+library(dplyr)
+library(zoo)
+library(varhandle)
+```
+<H1> Let's First define our problem </H1>
+
+For this project, we want to look at the pull requests by year and quarter for various programming languages. This should give an interesting indicator. 
+
+
+<H1> The First look into the data set </H1>
+
+```{r}
+url.data <- "prs.csv"
+raw <-read.csv(url.data)
+raw
+```
+
+
+<H1> Now let's look into the data set </H1>
+
+First things first, lets start looking at the raw data just to see what things look like. An interesting note is that this data covers from 2011-2022 with approximately 200 langauges. 
+
+
+```{r}
+sort(unique(raw$name))
+sort(unique(raw$year))
+sort(unique(raw$quarter))
+
+```
+
+<H1> Let's Tidy the data a bit </H1> 
+
+For the most part, I want to draw a bottom line on all of the current data, ensuring that no entries under 100 pulls a quarter are included as they simply do not have enough weight. 
+
+```{r}
+cleanData <- raw[raw$count > 100,]
+cleanData
+```
+
+<H1> Let's Make the first and second derivative </H1>
+
+```{r}
+final_data = data.frame(matrix(vector(), 0, 5,
+                dimnames=list(c(), c("Name", "Year", "Quarter", "growth", "dervgrowth" ))),
+                stringsAsFactors=F)
+for (item in unique(raw$name)) {
+  tempData <- cleanData[cleanData$name == item,]
+  tempDataYear <- tempData[order(-tempData$year, -tempData$quarter),]
+  tempDataYear$growth = 0
+  tempDataYear$dervgrowth = 0
+  if(nrow(tempDataYear) >= 2)
+  {
+    for (row in 1:(nrow(tempDataYear)-1)) {
+      tempDataYear$growth[row] = tempDataYear$count[row]-tempDataYear$count[row+1]
+      
+      
+    }
+    for (row in 1:(nrow(tempDataYear)-2)) {
+      tempDataYear$dervgrowth[row] = tempDataYear$growth[row]-tempDataYear$growth[row+1]
+      
+      
+    }
+  }
+  
+  tempDataYear <- subset(tempDataYear, select = c(-count) )
+  final_data <- rbind(final_data, tempDataYear)
+  #tempDataOrdered <- tempData[order(-tempData$year)]
+}
+
+final_data
+```
+<H1> The Conclusion </H1>
+
+At this point we have the data massaged and tidy, the first and second derivative calculated for reporting period. An easy extension to this would be to view the delta between the quarters, just to ensure that each time period is easily weighted the same. 
+
+At this point we can simply save the data and finish project 2!
+
+```{r}
+write.csv(final_data,"Coding_Language_growth.csv", row.names = FALSE)
+```
+
