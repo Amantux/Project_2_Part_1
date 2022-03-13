@@ -25,6 +25,8 @@ library(zoo)
 
 <H1> The Data Grab </H1>
 
+First things first read the data from the CDC. 
+
 ```{r, echo=TRUE}
 url.data <- "https://data.cdc.gov/api/views/9mfq-cb36/rows.csv?accessType=DOWNLOAD"
 raw <-read.csv(url.data)
@@ -35,7 +37,7 @@ raw
 
 <H2> Let's Start with Checking the State list </H2>
 
-lets test this?
+Firs things first lets grab the unique items from the state column. 
 
 ```{r}
 sort(unique(raw$state))
@@ -44,7 +46,12 @@ sort(unique(raw$state))
 
 <H2> Review </H2>
 
-So firstly FSM is a small island Nation, NYC is New York City, which should be combined with New York State. In addition not all states are included in this list, indicating that not all states provided data. Let's see what happens when we look into the data some more. Just going off the back of my hand and a quick skim of the data list, "AS" "NYC" "PR"  "PW"  "RI"  "RMI" "FSM" "MP" "VI" all appear to be not valid options. First things first, I want to create a new dataframe linking Created_at and submission date, mostly because I am interested in seeing it. 
+So firstly FSM is a small island Nation, NYC is New York City, which should be combined with New York State. In addition not all states are included in this list, indicating that not all states provided data. Let's see what happens when we look into the data some more. Just going off the back of my hand and a quick skim of the data list, "AS" "NYC" "PR"  "PW"  "RMI" "FSM" "MP" all appear to be not valid options. 
+
+<H1> A small side step </H1>
+
+
+First things first, I want to create a new data frame linking Created_at and submission date, mostly because I am interested in seeing it, and the transformations to effectively combine and mitigate the data will eliminate deliveries of data. 
 
 ```{r}
 deltaDate <- subset(raw, select = c(submission_date,created_at) )
@@ -55,17 +62,22 @@ deltaDate
 write.csv(deltaDate,"Covid_data_reporting_delta.csv", row.names = FALSE)
 ```
 
-<H1> Let's Address unique states </H1>
+<H1> Now let's Address unique states </H1>
 
-Firstly, there are more entries than there are actual states. At just a first glance over, NYC should be incorporated into NY as its a city in a state. 
+Firstly, there are more entries than there are actual states. At just a first glance over, NYC should be incorporated into NY as its a city in a state. IE:
+
  "AK"  "AL"  "AR"   "AZ"  "CA"  "CO"  "CT"  "DC"  "DE"  "FL" "GA"   "HI"  "IA"  "ID"  "IL"  "IN" "KY"  "LA"  "MA"  "MD"  "ME" "MI"  "MN"  "MO"  "MS"  "MT"  "NC"  "ND"  "NE"  "NH"  "NJ"  "NM"  "NV"  "NY" "OH"  "OK"  "OR"  "PA"  "RI"   "SC"  "SD" "TN"  "TX"  "UT"  "VA"   "VT"  "WA"  "WI"  "WV"  "WY" 
 
+Ans while we are at it, let's see the exact list of what is not a state. 
 
 ```{r}
 acceptable_states <- c('AK','AL','AR','AZ','CA','CO','CT','DC','DE','FL','GA','HI','IA','ID','IL','IN','KY','KS','LA','MA','MD','ME','MI','MN','MO','MS','MT','NC','ND','NE','NH','NJ','NM','NV','NY','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VA','VT','WA','WI','WV','WY')
 all_states <- unique(raw$state)
 all_states[!(all_states %in% acceptable_states)]
 ```
+
+From there, let's merge in the NYC data into the NY data. 
+
 
 ```{r}
 data_new <- raw %>%                               # Replacing values
@@ -77,22 +89,20 @@ data_new
 
 
 ```
+
+And at this point we will proceede to summarise the data, based on the submission date and state. 
+
 ```{r}
 data_new %>%
   group_by(submission_date, state) %>%
   summarise_all(sum)
 ```
-
+Now we have the population counts teed up, lets move onto quarters. 
 
 <H1> Let's Define the quarters </H1>
 
-I really didn't like the approach of aggregating by season as it fails to take into account changes in the COVID situation due to time of year, 
+I really didn't like the approach of aggregating by season as it fails to take into account changes in the COVID situation due to time of year, so I opted to add year and quarter in as it standardizes definitions and makes it cleaner.
 
-
-Spring-March 1st to May 31
-Summer-June 1st to August 31st
-Fall-Sept 1 to November 30th
-Winter-Dec 1 to Feb 28/29
 
 ```{r}
 data_new$yearquarter = as.yearqtr(data_new$submission_date, format = "%m/%d/%Y")
